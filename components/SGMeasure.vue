@@ -4,23 +4,30 @@
             <v-card-text class="py-0">
                 <v-row align="center" no-gutters>
 
-                    <v-col class="text-h2" cols="6" >
+                    <v-col class="text-h3   " cols="8" >
                         {{prefix + " " + value + " " + suffix}} 
                     </v-col>
 
-                    <v-col cols="6" class="text-right">
+                    <v-col cols="4" class="text-right">
                         <v-icon :color="iconColor" :icon="icon" size="88" />
                     </v-col>
 
                 </v-row>
+
             </v-card-text>
         </v-card>
     </div>
 </template>
 
 <script>
+import * as mqtt from 'mqtt/dist/mqtt.min'
+
 
 export default {
+    data: () => ({
+        value: 0
+    }),
+
     props: {
         title: {
             type: String
@@ -28,8 +35,8 @@ export default {
         prefix: {
             type: String
         },
-        value: {
-            type: Number
+        topic: {
+            type: String
         },
         suffix: {
             type: String
@@ -41,9 +48,40 @@ export default {
             type: String
         }
     },
-    data: () => ({
-    //   value: 24
-    }),
+
+    mounted () {
+
+        let vm = this
+        console.log(`Topic: ${vm.topic}`)
+
+        let options = {
+            clean: false,
+            keepalive: 60,
+            clientId: "client-id-" + Math.random().toString(16).substring(2, 10),
+            connectTimeout: 4000,
+        }
+        let client = mqtt.connect("ws://localhost:9001", options)
+        
+
+        client.on("connect", function () {
+            console.log("CONNECTED")
+            client.subscribe(vm.topic, (err) => {
+                if (!err) {
+                    // console.log("SUBSCRIPTO")
+                } else {
+                    console.error(`Error ocurred: ${err}`)
+                }
+            })
+        })
+
+        client.on("message", function (topic, message) {
+            // console.log("MESSAGE ARRIVED: "+ message + "from topic: "+ topic)
+            if (topic == vm.topic) {
+                vm.value = message
+                vm.$forceUpdate
+            }
+        })
+    }
   }
 
 </script>
